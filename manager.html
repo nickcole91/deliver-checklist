@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manager Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://kit.fontawesome.com/4a60b27e39.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    .checkbox-list { max-height: 12rem; overflow-y: auto; }
+    .tap-target { padding: 0.75rem; font-size: 1.25rem; }
+    select, input { -webkit-appearance: none; -moz-appearance: none; appearance: none; }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div id="login-page" class="min-h-screen flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg shadow w-full max-w-md">
+      <h1 class="text-2xl font-bold text-center mb-4">Manager Login</h1>
+      <form id="login-form">
+        <div class="mb-4">
+          <label class="block text-gray-700">Password</label>
+          <input type="password" id="password" class="tap-target w-full p-3 border rounded">
+        </div>
+        <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700"><i class="fas fa-sign-in-alt mr-2"></i>Login</button>
+      </form>
+    </div>
+  </div>
+  <div id="main-page" class="min-h-screen hidden">
+    <nav class="bg-blue-600 text-white p-4 flex justify-between">
+      <div id="nav-dashboard" class="cursor-pointer font-bold">Dashboard</div>
+      <div id="nav-weekly" class="cursor-pointer">Weekly Report</div>
+      <div id="nav-run-times" class="cursor-pointer">Run Times</div>
+      <div id="nav-compliance" class="cursor-pointer">Compliance</div>
+      <div id="nav-temp-logs" class="cursor-pointer">Temp Logs</div>
+      <div id="nav-key-tracking" class="cursor-pointer">Key Tracking</div>
+      <div id="nav-audit" class="cursor-pointer">Audit Trail</div>
+      <div id="nav-admin" class="cursor-pointer">Admin</div>
+    </nav>
+    <div id="dashboard-page" class="container mx-auto p-4">
+      <h1 class="text-2xl font-bold text-center mb-4">Manager Dashboard</h1>
+      <div class="bg-white p-4 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-2"><i class="fas fa-exclamation-circle mr-2"></i>Compliance Status</h2>
+        <p id="compliance-status" class="text-lg"></p>
+      </div>
+    </div>
+    <div id="weekly-page" class="container mx-auto p-4 hidden">
+      <h1 class="text-2xl font-bold text-center mb-4">Weekly Report</h1>
+      <div class="mb-4">
+        <label class="block text-gray-700">Select Truck</label>
+        <select id="truckFilter" class="tap-target w-full p-3 border rounded">
+          <option value="">All Trucks</option>
+        </select>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="bg-gray-200">
+              <th class="p-2">Run ID</th>
+              <th class="p-2">Date</th>
+              <th class="p-2">Run</th>
+              <th class="p-2">Truck</th>
+              <th class="p-2">Drivers</th>
+              <th class="p-2">Keys</th>
+              <th class="p-2">Load Temp</th>
+              <th class="p-2">2nd Drop Temp</th>
+              <th class="p-2">Truck Cleaned</th>
+              <th class="p-2">Keys Returned</th>
+              <th class="p-2">Comments</th>
+              <th class="p-2">Start Time</th>
+              <th class="p-2">Finish Time</th>
+              <th class="p-2">Total Hours</th>
+            </tr>
+          </thead>
+          <tbody id="reportTable"></tbody>
+        </table>
+      </div>
+      <button id="exportCsv" class="mt-4 bg-blue-600 text-white p-3 rounded hover:bg-blue-700"><i class="fas fa-download mr-2"></i>Export to CSV</button>
+    </div>
+    <div id="run-times-page" class="container mx-auto p-4 hidden">
+      <h1 class="text-2xl font-bold text-center mb-4">Run Times Report</h1>
+      <div class="bg-white p-4 rounded-lg shadow mb-4">
+        <h2 class="text-xl font-semibold mb-2"><i class="fas fa-filter mr-2"></i>Filters</h2>
+        <div class="mb-4">
+          <label class="block text-gray-700">Delivery Run</label>
+          <select id="runFilter" class="tap-target w-full p-3 border rounded">
+            <option value="">All Runs</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="block text-gray-700">Drivers</label>
+          <div class="checkbox-list">
+            <div id="driverFilterList"></div>
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="block text-gray-700">Timeframe</label>
+          <select id="timeframeFilter" class="tap-target w-full p-3 border rounded">
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-2"><i class="fas fa-table mr-2"></i>Run Times</h2>
+        <p id="run-stats" class="mb-2"></p>
+        <table class="w-full text-left">
+          <thead>
+            <tr class="bg-gray-200">
+              <th class="p-2">Run ID</th>
+              <th class="p-2">Run</th>
+              <th class="p-2">Drivers</th>
+              <th class="p-2">Start Time</th>
+              <th class="p-2">Finish Time</th>
+              <th class="p-2">Total Hours</th>
+            </tr>
+          </thead>
+          <tbody id="runTimesTable"></tbody>
+        </table>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow mt-4">
+        <h2 class="text-xl font-semibold mb-2"><i class="fas fa-chart-bar mr-2"></i>Run Hours Trend</h2>
+        <canvas id="hoursChart" height="100"></canvas>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow mt-4">
+        <h2 class="text-xl font-semibold mb-2"><i class="fas fa-balance-scale mr-2"></i>Driver Comparison</h2>
+        <table class="w-full text-left">
+          <thead>
+            <tr class="bg-gray-200">
+              <th class="p-2">Run</th>
+              <th class="p-2">Driver</th>
+              <th class="p-2">Average Hours</th>
+            </tr>
+          </thead>
+          <tbody id="comparisonTable"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="compliance-page" class="container mx-auto p-4 hidden">
+      <h1 class="text-2xl font-bold text-center mb-4">Compliance Report</h1>
+      <div class="mb-4">
+        <label class="block text-gray-700">Timeframe</label>
+        <select id="complianceTimeframe" class="tap-target w-full p-3 border rounded">
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="bg-gray-200">
+              <th class="p-2">Date</th>
+              <th class="p-2">Driver</th>
+              <th class="p-2">Truck</th>
+              <th class="p-2">Missing Checklist</th>
+            </tr>
+          </thead>
+          <tbody id="complianceTable"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="temp-logs-page" class="container mx-auto p-4 hidden">
+      <h1 class="text-2xl font-bold text-center mb-4">Truck Temperature Logs</h1>
+      <div class="mb-4">
+        <label class="block text-gray-700">Select Truck</label>
+        <select id="tempTruckFilter" class="tap-target w-full p-3 border rounded">
+          <option value="">All Trucks</option>
+        </select>
+      </div>
+      <div class="mb-4">
+        <label class="block text-gray-700">Timeframe</label>
+        <select id="tempTimeframe" class="tap-target w-full p-3 border rounded">
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="bg-gray-200">
+              <th class="p-2">Run ID</th>
+              <th class="p-2">Date</th>
+              <th class="p-2">Truck</th>
+              <th class="p-2">Load Temp</th>
+              <th class="p-2">2nd Drop Temp</th>
+              <th class="p-2">Timestamp</th>
+            </tr>
+          </thead>
+          <tbody id="tempLogsTable"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="key-tracking-page" class="container mx-auto p-4 hidden">
+      <h1 class="text-2xl font-bold text-center mb-4">Key Tracking</h1>
+      <div class="mb-4">
+        <label class="block text-gray-700">Select Customer Key</label>
+        <select id="keyFilter" class="tap-target w-full p-3 border rounded">
+          <option value="">Select Key</option>
+        </select>
+      </div>
+      <div class="mb-4">
+        <label class="block text-gray-700">Timeframe</label>
+        <select id="keyTimeframe" class="tap-target w-full p-3 border rounded">
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="bg-gray-200">
+              <th class="p-2">Run ID</th>
+              <th class="p-2">Date</th>
+              <th class="p-2">Run</th>
+              <th class="p-2">Truck</th>
+              <th class="p-2">Drivers</th>
+              <th class="p-2">Key</th>
+              <th class="p-2">Sign-Out Time</th>
+            </tr>
+          </thead>
+          <tbody id="keyTrackingTable"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="audit-page" class="container mx-auto p-4 hidden">
+      <h1 class="text-2xl font-bold text-center mb-4">Audit Trail</h1>
+      <div class="bg-white p-4 rounded-lg shadow">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="bg-gray-200">
+              <th class="p-2">Timestamp</th>
+              <th class="p-2">Type</th>
+              <th class="p-2">Success</th>
+              <th class="p-2">Details</th>
+            </tr>
+          </thead>
+          <tbody id="auditTable"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="admin-page" class="container mx-auto p-4 hidden">
+      <h1 class="text-2xl font-bold text-center mb-4">Admin Panel</h1>
+      <div class="bg-white p-4 rounded-lg shadow mb-4">
+        <h2 class="text-xl font-semibold mb-2"><i class="fas fa-truck mr-2"></i>Manage Delivery Runs</h2>
+        <div class="mb-4">
+          <input id="newRun" type="text" placeholder="New run name" class="tap-target w-full p-3 border rounded">
+          <button id="addRun" class="mt-2 bg-blue-600 text-white p-3 rounded hover:bg-blue-700"><i class="fas fa-plus mr-2"></i>Add Run</button>
+        </div>
+        <ul id="runList" class="space-y-2"></ul>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow mb-4">
+        <h2 class="text-xl font-semibold mb-2"><i class="fas fa-users mr-2"></i>Manage Drivers</h2>
+        <div class="mb-4">
+          <input id="newDriver" type="text" placeholder="New driver name" class="tap-target w-full p-3 border rounded">
+          <button id="addDriver" class="mt-2 bg-blue-600 text-white p-3 rounded hover:bg-blue-700"><i class="fas fa-plus mr-2"></i>Add Driver</button>
+        </div>
+        <ul id="driverList" class="space-y-2"></ul>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow mb-4">
+        <h2 class="text-xl font-semibold mb-2"><i class="fas fa-truck-moving mr-2"></i>Manage Trucks</h2>
+        <div class="mb-4">
+          <input id="newTruck" type="text" placeholder="New truck registration" class="tap-target w-full p-3 border rounded">
+          <button id="addTruck" class="mt-2 bg-blue-600 text-white p-3 rounded hover:bg-blue-700"><i class="fas fa-plus mr-2"></i>Add Truck</button>
+        </div>
+        <ul id="truckList" class="space-y-2"></ul>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-2"><i class="fas fa-key mr-2"></i>Manage Customer Keys</h2>
+        <div class="mb-4">
+          <select id="keyRun" class="tap-target w-full p-3 border rounded mb-2">
+            <option value="">Select Run</option>
+          </select>
+          <input id="newKey" type="text" placeholder="New key name" class="tap-target w-full p-3 border rounded">
+          <button id="addKey" class="mt-2 bg-blue-600 text-white p-3 rounded hover:bg-blue-700"><i class="fas fa-plus mr-2"></i>Add Key</button>
+        </div>
+        <ul id="keyList" class="space-y-2"></ul>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow mt-4">
+        <h2 class="text-xl font-semibold mb-2"><i class="fas fa-trash-alt mr-2"></i>Reset Data</h2>
+        <button id="resetStorage" class="bg-red-600 text-white p-3 rounded hover:bg-red-700"><i class="fas fa-trash mr-2"></i>Clear localStorage</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const data = {
+      drivers: ['Adrien Duranti', 'Ashtan Davis', 'Bailey Fitzgerald', 'Benjamin Palfery', 'Brad Harrison', 'Brenton Andrew', 'Cody Mackenzie', 'Daniel Munn', 'Dean Browne', 'Hunter Smith', 'Izaak Browne', 'Jacob Bedbrook', 'Jason Hausler', 'Joshua Hokanson', 'Leigh Hutchinson', 'Maurinus Stander', 'Nathan Kime', 'Orson Kime', 'Patrick Adrien', 'Phillip Hayes', 'Shaun Dejeet', 'Stuart Imberger', 'Tallis Buntain'],
+      runs: ['Southern', 'Hastings', 'Sunshine', 'Peregian/Coolum', 'Western', 'Northern', 'Gympie Terrace', 'Early Hastings', 'Holiday Hastings'],
+      trucks: ['ABC123', 'XYZ789', 'DEF456'],
+      customerKeys: {
+        Southern: ['Southern Customer 1', 'Southern Customer 2'],
+        Hastings: ['Hastings Customer 1', 'Hastings Customer 2'],
+        Sunshine: ['Sunshine Customer 1'],
+        'Peregian/Coolum': ['Peregian Customer 1'],
+        Western: ['Western Customer 1'],
+        Northern: ['Northern Customer 1'],
+        'Gympie Terrace': ['Gympie Customer 1'],
+        'Early Hastings': ['Early Hastings Customer 1'],
+        'Holiday Hastings': ['Holiday Hastings Customer 1']
+      },
+      submissions: [],
+      attempts: []
+    };
+
+    try {
+      data.submissions = JSON.parse(localStorage.getItem('submissions')) || [];
+      data.attempts = JSON.parse(localStorage.getItem('attempts')) || [];
+    } catch (error) {
+      console.error('Error initializing localStorage:', error);
+    }
+
+    let currentChart = null;
+
+    const loginPage = document.getElementById('login-page');
+    const mainPage = document.getElementById('main-page');
+    const dashboardPage = document.getElementById('dashboard-page');
+    const weeklyPage = document.getElementById('weekly-page');
+    const runTimesPage = document.getElementById('run-times-page');
+    const compliancePage = document.getElementById('compliance-page');
+    const tempLogsPage = document.getElementById('temp-logs-page');
+    const keyTrackingPage = document.getElementById('key-tracking-page');
+    const auditPage = document.getElementById('audit-page');
+    const adminPage = document.getElementById('admin-page');
+    const navDashboard = document.getElementById('nav-dashboard');
+    const navWeekly = document.getElementById('nav-weekly');
+    const navRunTimes = document.getElementById('nav-run-times');
+    const navCompliance = document.getElementById('nav-compliance');
+    const navTempLogs = document.getElementById('nav-temp-logs');
+    const navKeyTracking = document.getElementById('nav-key-tracking');
+    const navAudit = document.getElementById('nav-audit');
+    const navAdmin = document.getElementById('nav-admin');
+
+    function showPage(page) {
+      try {
+        dashboardPage.classList.add('hidden');
+        weeklyPage.classList.add('hidden');
+        runTimesPage.classList.add('hidden');
+        compliancePage.classList.add('hidden');
+        tempLogsPage.classList.add('hidden');
+        keyTrackingPage.classList.add('hidden');
+        auditPage.classList.add('hidden');
+        adminPage.classList.add('hidden');
+        page.classList.remove('hidden');
+        navDashboard.classList.toggle('font-bold', page === dashboardPage);
+        navWeekly.classList.toggle('font-bold', page === weeklyPage);
+        navRunTimes.classList.toggle('font-bold', page === runTimesPage);
+        navCompliance.classList.toggle('font-bold', page === compliancePage);
+        navTempLogs.classList.toggle('font-bold', page === tempLogsPage);
+        navKeyTracking.classList.toggle('font-bold', page === keyTrackingPage);
+        navAudit.classList.toggle('font-bold', page === auditPage);
+        navAdmin.classList.toggle('font-bold', page === adminPage);
+        console.log(`Showing page: ${page.id}`);
+      } catch (error) {
+        console.error('Error in showPage:', error);
+      }
+    }
+
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      try {
+        if (document.getElementById('password').value === 'manager123') {
+          loginPage.classList.add('hidden');
+          mainPage.classList.remove('hidden');
+          renderDashboard();
+          renderWeeklyReport();
+        } else {
+          alert('Incorrect password');
+        }
+      } catch (error) {
+        console.error('Error in login:', error);
+      }
+    });
+
+    function renderDashboard() {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const todaySubmissions = data.submissions.filter(s => s.deliveryDate === today);
+        const driversSubmitted = [...new Set(todaySubmissions.flatMap(s => s.drivers))];
+        const pendingDrivers = data.drivers.length - driversSubmitted.length;
+        document.getElementById('compliance-status').textContent = `${pendingDrivers}/${data.drivers.length} drivers haven't submitted checklists today.`;
+        console.log('Rendered dashboard');
+      } catch (error) {
+        console.error('Error in renderDashboard:', error);
+      }
+    }
+
+    function renderWeeklyReport(truck = '') {
+      try {
+        const table = document.getElementById('reportTable');
+        table.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        data.submissions
+          .filter(s => !truck || s.truckReg === truck)
+          .forEach(s => {
+            const row = document.createElement('tr');
+            const totalHours = s.finishedRunTime ? ((new Date(s.finishedRunTime) - new Date(s.startRunTime)) / 3600000).toFixed(2) : '-';
+            row.innerHTML = `
+              <td class="p-2">${s.runId}</td>
+              <td class="p-2">${s.deliveryDate}</td>
+              <td class="p-2">${s.deliveryRun}</td>
+              <td class="p-2">${s.truckReg}</td>
+              <td class="p-2">${s.drivers.join(', ')}</td>
+              <td class="p-2">${s.customerKeys.join(', ')}</td>
+              <td class="p-2">${s.loadingTemp || '-'}</td>
+              <td class="p-2">${s.secondDropTemp || '-'}</td>
+              <td class="p-2">${s.truckCleaned ? 'Yes' : 'No'}</td>
+              <td class="p-2">${s.keysReturned ? s.keysReturned.join(', ') : '-'}</td>
+              <td class="p-2">${s.runComments || '-'}</td>
+              <td class="p-2">${s.startRunTime ? new Date(s.startRunTime).toLocaleString() : '-'}</td>
+              <td class="p-2">${s.finishedRunTime ? new Date(s.finishedRunTime).toLocaleString() : '-'}</td>
+              <td class="p-2">${totalHours}</td>
+            `;
+            fragment.appendChild(row);
+          });
+        table.appendChild(fragment);
+        console.log('Rendered weekly report for truck:', truck);
+      } catch (error) {
+        console.error('Error in renderWeeklyReport:', error);
+      }
+    }
+
+    function renderRunTimesReport(run = '', drivers = [], timeframe = 'weekly') {
+      try {
+        const table = document.getElementById('runTimesTable');
+        table.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        const now = new Date();
+        const timeFilter = timeframe === 'weekly' ? new Date(now.setDate(now.getDate() - 7)) : new Date(now.setMonth(now.getMonth() - 1));
+        const filteredSubmissions = data.submissions
+          .filter(s => s.finishedRunTime)
+          .filter(s => !run || s.deliveryRun === run)
+          .filter(s => drivers.length === 0 || s.drivers.some(d => drivers.includes(d)))
+          .filter(s => new Date(s.startRunTime) >= timeFilter);
+        filteredSubmissions.forEach(s => {
+          const row = document.createElement('tr');
+          const totalHours = ((new Date(s.finishedRunTime) - new Date(s.startRunTime)) / 3600000).toFixed(2);
+          row.innerHTML = `
+            <td class="p-2">${s.runId}</td>
+            <td class="p-2">${s.deliveryRun}</td>
+            <td class="p-2">${s.drivers.join(', ')}</td>
+            <td class="p-2">${new Date(s.startRunTime).toLocaleString()}</td>
+            <td class="p-2">${new Date(s.finishedRunTime).toLocaleString()}</td>
+            <td class="p-2">${totalHours}</td>
+          `;
+          fragment.appendChild(row);
+        });
+        table.appendChild(fragment);
+
+        const hours = filteredSubmissions.map(s => (new Date(s.finishedRunTime) - new Date(s.startRunTime)) / 3600000);
+        const avgHours = hours.length ? (hours.reduce((a, b) => a + b, 0) / hours.length).toFixed(2) : '-';
+        const minHours = hours.length ? Math.min(...hours).toFixed(2) : '-';
+        const maxHours = hours.length ? Math.max(...hours).toFixed(2) : '-';
+        document.getElementById('run-stats').textContent = `Average: ${avgHours} hrs, Min: ${minHours} hrs, Max: ${maxHours} hrs`;
+
+        const comparisonTable = document.getElementById('comparisonTable');
+        comparisonTable.innerHTML = '';
+        const comparisonFragment = document.createDocumentFragment();
+        const runs = [...new Set(filteredSubmissions.map(s => s.deliveryRun))];
+        runs.forEach(run => {
+          const runSubmissions = filteredSubmissions.filter(s => s.deliveryRun === run);
+          const driverStats = {};
+          runSubmissions.forEach(s => {
+            s.drivers.forEach(driver => {
+              if (!driverStats[driver]) driverStats[driver] = { totalHours: 0, count: 0 };
+              const hours = (new Date(s.finishedRunTime) - new Date(s.startRunTime)) / 3600000;
+              driverStats[driver].totalHours += hours;
+              driverStats[driver].count += 1;
+            });
+          });
+          Object.entries(driverStats)
+            .filter(([driver]) => drivers.length === 0 || drivers.includes(driver))
+            .forEach(([driver, stats]) => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td class="p-2">${run}</td>
+                <td class="p-2">${driver}</td>
+                <td class="p-2">${(stats.totalHours / stats.count).toFixed(2)}</td>
+              `;
+              comparisonFragment.appendChild(row);
+            });
+        });
+        comparisonTable.appendChild(comparisonFragment);
+
+        const chartData = {};
+        filteredSubmissions.forEach(s => {
+          s.drivers.forEach(driver => {
+            if (!chartData[driver]) chartData[driver] = 0;
+            chartData[driver] += (new Date(s.finishedRunTime) - new Date(s.startRunTime)) / 3600000;
+          });
+        });
+        const ctx = document.getElementById('hoursChart').getContext('2d');
+        if (currentChart) currentChart.destroy();
+        currentChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: Object.keys(chartData),
+            datasets: [{
+              label: 'Total Hours',
+              data: Object.values(chartData),
+              backgroundColor: '#2563eb',
+              borderColor: '#1e40af',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            scales: { y: { beginAtZero: true, title: { display: true, text: 'Hours' } } },
+            plugins: { legend: { display: false } }
+          }
+        });
+        console.log('Rendered run times report');
+      } catch (error) {
+        console.error('Error in renderRunTimesReport:', error);
+      }
+    }
+
+    function renderComplianceReport(timeframe = 'weekly') {
+      try {
+        const table = document.getElementById('complianceTable');
+        table.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        const now = new Date();
+        const days = timeframe === 'weekly' ? 7 : 30;
+        const dates = [];
+        for (let i = 0; i < days; i++) {
+          const date = new Date(now);
+          date.setDate(now.getDate() - i);
+          dates.push(date.toISOString().split('T')[0]);
+        }
+        dates.forEach(date => {
+          const submissions = data.submissions.filter(s => s.deliveryDate === date);
+          const submittedDrivers = [...new Set(submissions.flatMap(s => s.drivers))];
+          const submittedTrucks = [...new Set(submissions.map(s => s.truckReg))];
+          data.drivers.forEach(driver => {
+            if (!submittedDrivers.includes(driver)) {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td class="p-2">${date}</td>
+                <td class="p-2">${driver}</td>
+                <td class="p-2">-</td>
+                <td class="p-2">Delivery Checks</td>
+              `;
+              fragment.appendChild(row);
+            }
+          });
+          data.trucks.forEach(truck => {
+            const truckSubmissions = submissions.filter(s => s.truckReg === truck);
+            const hasFinished = truckSubmissions.some(s => s.finishedRunTime);
+            if (truckSubmissions.length > 0 && !hasFinished) {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td class="p-2">${date}</td>
+                <td class="p-2">${truckSubmissions[0].drivers.join(', ')}</td>
+                <td class="p-2">${truck}</td>
+                <td class="p-2">Finished Run</td>
+              `;
+              fragment.appendChild(row);
+            } else if (!submittedTrucks.includes(truck)) {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td class="p-2">${date}</td>
+                <td class="p-2">-</td>
+                <td class="p-2">${truck}</td>
+                <td class="p-2">Delivery Checks</td>
+              `;
+              fragment.appendChild(row);
+            }
+          });
+        });
+        table.appendChild(fragment);
+        console.log('Rendered compliance report');
+      } catch (error) {
+        console.error('Error in renderComplianceReport:', error);
+      }
+    }
+
+    function renderTempLogs(truck = '', timeframe = 'weekly') {
+      try {
+        const table = document.getElementById('tempLogsTable');
+        table.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        const now = new Date();
+        const timeFilter = timeframe === 'weekly' ? new Date(now.setDate(now.getDate() - 7)) : new Date(now.setMonth(now.getMonth() - 1));
+        data.submissions
+          .filter(s => !truck || s.truckReg === truck)
+          .filter(s => new Date(s.startRunTime) >= timeFilter)
+          .forEach(s => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td class="p-2">${s.runId}</td>
+              <td class="p-2">${s.deliveryDate}</td>
+              <td class="p-2">${s.truckReg}</td>
+              <td class="p-2">${s.loadingTemp || '-'}</td>
+              <td class="p-2">${s.secondDropTemp || '-'}</td>
+              <td class="p-2">${s.startRunTime ? new Date(s.startRunTime).toLocaleString() : '-'}</td>
+            `;
+            fragment.appendChild(row);
+          });
+        table.appendChild(fragment);
+        console.log('Rendered temp logs');
+      } catch (error) {
+        console.error('Error in renderTempLogs:', error);
+      }
+    }
+
+    function renderKeyTracking(key = '', timeframe = 'weekly') {
+      try {
+        const table = document.getElementById('keyTrackingTable');
+        table.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        const now = new Date();
+        const timeFilter = timeframe === 'weekly' ? new Date(now.setDate(now.getDate() - 7)) : new Date(now.setMonth(now.getMonth() - 1));
+        const filteredSubmissions = data.submissions
+          .filter(s => !key || s.customerKeys.includes(key))
+          .filter(s => new Date(s.startRunTime) >= timeFilter)
+          .sort((a, b) => new Date(b.startRunTime) - new Date(a.startRunTime));
+        if (filteredSubmissions.length > 0) {
+          const s = filteredSubmissions[0];
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td class="p-2">${s.runId}</td>
+            <td class="p-2">${s.deliveryDate}</td>
+            <td class="p-2">${s.deliveryRun}</td>
+            <td class="p-2">${s.truckReg}</td>
+            <td class="p-2">${s.drivers.join(', ')}</td>
+            <td class="p-2">${key}</td>
+            <td class="p-2">${new Date(s.startRunTime).toLocaleString()}</td>
+          `;
+          fragment.appendChild(row);
+        }
+        table.appendChild(fragment);
+        console.log('Rendered key tracking');
+      } catch (error) {
+        console.error('Error in renderKeyTracking:', error);
+      }
+    }
+
+    function renderAuditTrail() {
+      try {
+        const table = document.getElementById('auditTable');
+        table.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        data.attempts.forEach(a => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td class="p-2">${new Date(a.timestamp).toLocaleString()}</td>
+            <td class="p-2">${a.type}</td>
+            <td class="p-2">${a.success ? 'Yes' : 'No'}</td>
+            <td class="p-2">${a.details}</td>
+          `;
+          fragment.appendChild(row);
+        });
+        table.appendChild(fragment);
+        console.log('Rendered audit trail');
+      } catch (error) {
+        console.error('Error in renderAuditTrail:', error);
+      }
+    }
+
+    function renderDriverFilters() {
+      try {
+        const driverFilterList = document.getElementById('driverFilterList');
+        driverFilterList.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        data.drivers.forEach(driver => {
+          const label = document.createElement('label');
+          label.className = 'flex items-center tap-target';
+          label.innerHTML = `<input type="checkbox" name="driverFilter" value="${driver}" class="h-5 w-5 mr-2">${driver}`;
+          fragment.appendChild(label);
+        });
+        driverFilterList.appendChild(fragment);
+        console.log('Rendered driver filters');
+      } catch (error) {
+        console.error('Error in renderDriverFilters:', error);
+      }
+    }
+
+    function renderAdminLists() {
+      try {
+        const runList = document.getElementById('runList');
+        const driverList = document.getElementById('driverList');
+        const truckList = document.getElementById('truckList');
+        const keyList = document.getElementById('keyList');
+        const keyRun = document.getElementById('keyRun');
+        runList.innerHTML = '';
+        driverList.innerHTML = '';
+        truckList.innerHTML = '';
+        keyList.innerHTML = '';
+        keyRun.innerHTML = '<option value="">Select Run</option>';
+        const runFragment = document.createDocumentFragment();
+        const driverFragment = document.createDocumentFragment();
+        const truckFragment = document.createDocumentFragment();
+        const keyFragment = document.createDocumentFragment();
+        data.runs.forEach(run => {
+          const li = document.createElement('li');
+          li.className = 'flex justify-between p-2 bg-gray-100 rounded';
+          li.innerHTML = `${run}<button class="text-red-600 hover:text-red-800 remove-run" data-run="${run}"><i class="fas fa-trash"></i></button>`;
+          runFragment.appendChild(li);
+          const option = document.createElement('option');
+          option.value = run;
+          option.textContent = run;
+          keyRun.appendChild(option);
+        });
+        data.drivers.forEach(driver => {
+          const li = document.createElement('li');
+          li.className = 'flex justify-between p-2 bg-gray-100 rounded';
+          li.innerHTML = `${driver}<button class="text-red-600 hover:text-red-800 remove-driver" data-driver="${driver}"><i class="fas fa-trash"></i></button>`;
+          driverFragment.appendChild(li);
+        });
+        data.trucks.forEach(truck => {
+          const li = document.createElement('li');
+          li.className = 'flex justify-between p-2 bg-gray-100 rounded';
+          li.innerHTML = `${truck}<button class="text-red-600 hover:text-red-800 remove-truck" data-truck="${truck}"><i class="fas fa-trash"></i></button>`;
+          truckFragment.appendChild(li);
+        });
+        Object.entries(data.customerKeys).forEach(([run, keys]) => {
+          keys.forEach(key => {
+            const li = document.createElement('li');
+            li.className = 'flex justify-between p-2 bg-gray-100 rounded';
+            li.innerHTML = `${key} (${run})<button class="text-red-600 hover:text-red-800 remove-key" data-key="${key}" data-run="${run}"><i class="fas fa-trash"></i></button>`;
+            keyFragment.appendChild(li);
+          });
+        });
+        runList.appendChild(runFragment);
+        driverList.appendChild(driverFragment);
+        truckList.appendChild(truckFragment);
+        keyList.appendChild(keyFragment);
+        console.log('Rendered admin lists');
+      } catch (error) {
+        console.error('Error in renderAdminLists:', error);
+      }
+    }
+
+    function renderTruckFilter() {
+      try {
+        const truckFilter = document.getElementById('truckFilter');
+        const tempTruckFilter = document.getElementById('tempTruckFilter');
+        truckFilter.innerHTML = '<option value="">All Trucks</option>';
+        tempTruckFilter.innerHTML = '<option value="">All Trucks</option>';
+        data.trucks.forEach(truck => {
+          const option1 = document.createElement('option');
+          const option2 = document.createElement('option');
+          option1.value = truck;
+          option1.textContent = truck;
+          option2.value = truck;
+          option2.textContent = truck;
+          truckFilter.appendChild(option1);
+          tempTruckFilter.appendChild(option2);
+        });
+        console.log('Rendered truck filters');
+      } catch (error) {
+        console.error('Error in renderTruckFilter:', error);
+      }
+    }
+
+    function renderRunFilter() {
+      try {
+        const runFilter = document.getElementById('runFilter');
+        runFilter.innerHTML = '<option value="">All Runs</option>';
+        data.runs.forEach(run => {
+          const option = document.createElement('option');
+          option.value = run;
+          option.textContent = run;
+          runFilter.appendChild(option);
+        });
+        console.log('Rendered run filter');
+      } catch (error) {
+        console.error('Error in renderRunFilter:', error);
+      }
+    }
+
+    function renderKeyFilter() {
+      try {
+        const keyFilter = document.getElementById('keyFilter');
+        keyFilter.innerHTML = '<option value="">Select Key</option>';
+        Object.values(data.customerKeys).flat().forEach(key => {
+          const option = document.createElement('option');
+          option.value = key;
+          option.textContent = key;
+          keyFilter.appendChild(option);
+        });
+        console.log('Rendered key filter');
+      } catch (error) {
+        console.error('Error in renderKeyFilter:', error);
+      }
+    }
+
+    const debouncedRenderRunTimes = debounce((run, drivers, timeframe) => {
+      renderRunTimesReport(run, drivers, timeframe);
+    }, 300);
+
+    document.getElementById('truckFilter').addEventListener('change', () => {
+      try {
+        renderWeeklyReport(document.getElementById('truckFilter').value);
+      } catch (error) {
+        console.error('Error in truckFilter change:', error);
+      }
+    }, { passive: true });
+
+    document.getElementById('runFilter').addEventListener('change', () => {
+      try {
+        const run = document.getElementById('runFilter').value;
+        const drivers = Array.from(document.querySelectorAll('input[name="driverFilter"]:checked')).map(d => d.value);
+        const timeframe = document.getElementById('timeframeFilter').value;
+        debouncedRenderRunTimes(run, drivers, timeframe);
+      } catch (error) {
+        console.error('Error in runFilter change:', error);
+      }
+    }, { passive: true });
+
+    document.getElementById('driverFilterList').addEventListener('change', () => {
+      try {
+        const run = document.getElementById('runFilter').value;
+        const drivers = Array.from(document.querySelectorAll('input[name="driverFilter"]:checked')).map(d => d.value);
+        const timeframe = document.getElementById('timeframeFilter').value;
+        debouncedRenderRunTimes(run, drivers, timeframe);
+      } catch (error) {
+        console.error('Error in driverFilterList change:', error);
+      }
+    }, { passive: true });
+
+    document.getElementById('timeframeFilter').addEventListener('change', () => {
+      try {
+        const run = document.getElementById('runFilter').value;
+        const drivers = Array.from(document.querySelectorAll('input[name="driverFilter"]:checked')).map(d => d.value);
+        const timeframe = document.getElementById('timeframeFilter').value;
+        debouncedRenderRunTimes(run, drivers, timeframe);
+      } catch (error) {
+        console.error('Error in timeframeFilter change:', error);
+      }
+    }, { passive: true });
+
+    document.getElementById('complianceTimeframe').addEventListener('change', () => {
+      try {
+        renderComplianceReport(document.getElementById('complianceTimeframe').value);
+      } catch (error) {
+        console.error('Error in complianceTimeframe change:', error);
+      }
+    }, { passive: true });
+
+    document.getElementById('tempTruckFilter').addEventListener('change', () => {
+      try {
+        const truck = document.getElementById('tempTruckFilter').value;
+        const timeframe = document.getElementById('tempTimeframe').value;
+        renderTempLogs(truck, timeframe);
+      } catch (error) {
+        console.error('Error in tempTruckFilter change:', error);
+      }
+    }, { passive: true });
+
+    document.getElementById('tempTimeframe').addEventListener('change', () => {
+      try {
+        const truck = document.getElementById('tempTruckFilter').value;
+        const timeframe = document.getElementById('tempTimeframe').value;
+        renderTempLogs(truck, timeframe);
+      } catch (error) {
+        console.error('Error in tempTimeframe change:', error);
+      }
+    }, { passive: true });
+
+    document.getElementById('keyFilter').addEventListener('change', () => {
+      try {
+        const key = document.getElementById('keyFilter').value;
+        const timeframe = document.getElementById('keyTimeframe').value;
+        renderKeyTracking(key, timeframe);
+      } catch (error) {
+        console.error('Error in keyFilter change:', error);
+      }
+    }, { passive: true });
+
+    document.getElementById('keyTimeframe').addEventListener('change', () => {
+      try {
+        const key = document.getElementById('keyFilter').value;
+        const timeframe = document.getElementById('keyTimeframe').value;
+        renderKeyTracking(key, timeframe);
+      } catch (error) {
+        console.error('Error in keyTimeframe change:', error);
+      }
+    }, { passive: true });
+
+    document.getElementById('exportCsv').addEventListener('click', () => {
+      try {
+        const headers = ['Run ID', 'Date', 'Run', 'Truck', 'Drivers', 'Keys', 'Load Temp', '2nd Drop Temp', 'Truck Cleaned', 'Keys Returned', 'Comments', 'Start Time', 'Finish Time', 'Total Hours'];
+        const csv = [
+          headers.join('\t'),
+          ...data.submissions.map(s => [
+            s.runId,
+            s.deliveryDate,
+            s.deliveryRun,
+            s.truckReg,
+            s.drivers.join(','),
+            s.customerKeys.join(','),
+            s.loadingTemp || '-',
+            s.secondDropTemp || '-',
+            s.truckCleaned ? 'Yes' : 'No',
+            s.keysReturned ? s.keysReturned.join(',') : '-',
+            s.runComments || '-',
+            s.startRunTime ? new Date(s.startRunTime).toLocaleString() : '-',
+            s.finishedRunTime ? new Date(s.finishedRunTime).toLocaleString() : '-',
+            s.finishedRunTime ? ((new Date(s.finishedRunTime) - new Date(s.startRunTime)) / 3600000).toFixed(2) : '-'
+          ].join('\t'))
+        ].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'weekly_report.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+        console.log('Exported CSV');
+      } catch (error) {
+        console.error('Error in exportCsv:', error);
+      }
+    });
+
+    document.getElementById('addRun').addEventListener('click', () => {
+      try {
+        const newRun = document.getElementById('newRun').value.trim();
+        if (newRun && !data.runs.includes(newRun)) {
+          data.runs.push(newRun);
+          data.customerKeys[newRun] = [];
+          localStorage.setItem('runs', JSON.stringify(data.runs));
+          localStorage.setItem('customerKeys', JSON.stringify(data.customerKeys));
+          renderAdminLists();
+          renderRunFilter();
+          document.getElementById('newRun').value = '';
+          console.log('Added run:', newRun);
+        }
+      } catch (error) {
+        console.error('Error in addRun:', error);
+      }
+    });
+
+    document.getElementById('addDriver').addEventListener('click', () => {
+      try {
+        const newDriver = document.getElementById('newDriver').value.trim();
+        if (newDriver && !data.drivers.includes(newDriver)) {
+          data.drivers.push(newDriver);
+          localStorage.setItem('drivers', JSON.stringify(data.drivers));
+          renderAdminLists();
+          renderDriverFilters();
+          document.getElementById('newDriver').value = '';
+          console.log('Added driver:', newDriver);
+        }
+      } catch (error) {
+        console.error('Error in addDriver:', error);
+      }
+    });
+
+    document.getElementById('addTruck').addEventListener('click', () => {
+      try {
+        const newTruck = document.getElementById('newTruck').value.trim();
+        if (newTruck && !data.trucks.includes(newTruck)) {
+          data.trucks.push(newTruck);
+          localStorage.setItem('trucks', JSON.stringify(data.trucks));
+          renderAdminLists();
+          renderTruckFilter();
+          document.getElementById('newTruck').value = '';
+          console.log('Added truck:', newTruck);
+        }
+      } catch (error) {
+        console.error('Error in addTruck:', error);
+      }
+    });
+
+    document.getElementById('addKey').addEventListener('click', () => {
+      try {
+        const run = document.getElementById('keyRun').value;
+        const newKey = document.getElementById('newKey').value.trim();
+        if (run && newKey && !data.customerKeys[run].includes(newKey)) {
+          data.customerKeys[run].push(newKey);
+          localStorage.setItem('customerKeys', JSON.stringify(data.customerKeys));
+          renderAdminLists();
+          renderKeyFilter();
+          document.getElementById('newKey').value = '';
+          console.log('Added key:', newKey, 'for run:', run);
+        }
+      } catch (error) {
+        console.error('Error in addKey:', error);
+      }
+    });
+
+    document.getElementById('runList').addEventListener('click', (e) => {
+      try {
+        if (e.target.classList.contains('remove-run') || e.target.parentElement.classList.contains('remove-run')) {
+          const run = e.target.dataset.run || e.target.parentElement.dataset.run;
+          data.runs = data.runs.filter(r => r !== run);
+          delete data.customerKeys[run];
+          localStorage.setItem('runs', JSON.stringify(data.runs));
+          localStorage.setItem('customerKeys', JSON.stringify(data.customerKeys));
+          renderAdminLists();
+          renderRunFilter();
+          console.log('Removed run:', run);
+        }
+      } catch (error) {
+        console.error('Error in removeRun:', error);
+      }
+    });
+
+    document.getElementById('driverList').addEventListener('click', (e) => {
+      try {
+        if (e.target.classList.contains('remove-driver') || e.target.parentElement.classList.contains('remove-driver')) {
+          const driver = e.target.dataset.driver || e.target.parentElement.dataset.driver;
+          data.drivers = data.drivers.filter(d => d !== driver);
+          localStorage.setItem('drivers', JSON.stringify(data.drivers));
+          renderAdminLists();
+          renderDriverFilters();
+          console.log('Removed driver:', driver);
+        }
+      } catch (error) {
+        console.error('Error in removeDriver:', error);
+      }
+    });
+
+    document.getElementById('truckList').addEventListener('click', (e) => {
+      try {
+        if (e.target.classList.contains('remove-truck') || e.target.parentElement.classList.contains('remove-truck')) {
+          const truck = e.target.dataset.truck || e.target.parentElement.dataset.truck;
+          data.trucks = data.trucks.filter(t => t !== truck);
+          localStorage.setItem('trucks', JSON.stringify(data.trucks));
+          renderAdminLists();
+          renderTruckFilter();
+          console.log('Removed truck:', truck);
+        }
+      } catch (error) {
+        console.error('Error in removeTruck:', error);
+      }
+    });
+
+    document.getElementById('keyList').addEventListener('click', (e) => {
+      try {
+        if (e.target.classList.contains('remove-key') || e.target.parentElement.classList.contains('remove-key')) {
+          const key = e.target.dataset.key || e.target.parentElement.dataset.key;
+          const run = e.target.dataset.run || e.target.parentElement.dataset.run;
+          data.customerKeys[run] = data.customerKeys[run].filter(k => k !== key);
+          localStorage.setItem('customerKeys', JSON.stringify(data.customerKeys));
+          renderAdminLists();
+          renderKeyFilter();
+          console.log('Removed key:', key, 'from run:', run);
+        }
+      } catch (error) {
+        console.error('Error in removeKey:', error);
+      }
+    });
+
+    document.getElementById('resetStorage').addEventListener('click', () => {
+      try {
+        localStorage.clear();
+        data.submissions = [];
+        data.attempts = [];
+        alert('localStorage cleared. Please reload the page.');
+        console.log('Cleared localStorage');
+      } catch (error) {
+        console.error('Error in resetStorage:', error);
+      }
+    });
+
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
+    // Initial renders
+    renderTruckFilter();
+    renderRunFilter();
+    renderKeyFilter();
+    renderDriverFilters();
+    renderAdminLists();
+    showPage(dashboardPage);
+  </script>
+</body>
+</html>
